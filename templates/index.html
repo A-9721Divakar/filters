@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOSS-Camera Filter and uploading S3 </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #666;
+        }
+        button {
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            width: 150px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        img {
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>DOSS-Camera Filter and uploading S3</h1>
+    <div class="button-container">
+        <button onclick="setFilter('grayscale')">Grayscale</button>
+        <button onclick="setFilter('invert')">Invert</button>
+        <button onclick="setFilter('sepia')">Sepia</button>
+        <button onclick="setFilter('blur')">Blur</button>
+    </div>
+    <div>
+        <h2>Video Feed</h2>
+        <img id="video" src="{{ url_for('video_feed', filter_type='none') }}" width="640" height="480">
+    </div>
+    <div>
+        <h2>Capture Image</h2>
+        <button id="capture_button" onclick="captureImage()">Capture Image</button>
+    </div>
+    <script>
+        let currentFilter = 'none';
+
+        function setFilter(filterType) {
+            currentFilter = filterType;
+            document.getElementById('video').src = "{{ url_for('video_feed', filter_type='none') }}".replace('none', filterType);
+        }
+
+        function captureImage() {
+            fetch('/capture', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({ filter_type: currentFilter }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.filename) {
+                    alert(`Image captured and uploaded to S3 as ${data.filename}`);
+                } else {
+                    alert(data.error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
