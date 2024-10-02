@@ -67,6 +67,16 @@
             document.getElementById('video').src = "{{ url_for('video_feed', filter_type='none') }}".replace('none', filterType);
         }
 
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(function(stream) {
+            // Successfully got the camera stream
+            const videoElement = document.querySelector('video');
+            videoElement.srcObject = stream;
+          })
+          .catch(function(err) {
+            console.log("Error accessing camera: ", err);
+          });
+
         function captureImage() {
             fetch('/capture', {
                 method: 'POST',
