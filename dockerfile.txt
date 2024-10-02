@@ -1,3 +1,4 @@
+docker run -e PORT=3000 -p 3000:3000 your-image-name
 PORT=3000 node app.js
 Flask>=2.2.
 opencv-python==4.10.0.84
