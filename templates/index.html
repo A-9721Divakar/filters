@@ -95,6 +95,112 @@
                 }
             });
         }
+
+        
+                const video = document.getElementById('video');
+                const captureBtn = document.getElementById('capture-btn');
+                const submitBtn = document.getElementById('submit-btn');
+                const canvas = document.getElementById('captured-image');
+                const loadingText = document.getElementById('loading-text');
+                const filters = document.querySelectorAll('.filter-btn');
+                let currentFilter = 'none';
+                let capturedImageData;
+
+                // Get video stream from webcam
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        video.srcObject = stream;
+                    })
+                    .catch(err => {
+                        console.error('Error accessing webcam: ', err);
+                    });
+
+                // Apply selected filter to the video stream
+                filters.forEach(filterBtn => {
+                    filterBtn.addEventListener('click', () => {
+                        currentFilter = filterBtn.getAttribute('data-filter');
+                        video.style.filter = getCSSFilter(currentFilter);
+                    });
+                });
+
+                // Capture the image from the video stream
+                captureBtn.addEventListener('click', () => {
+                    const context = canvas.getContext('2d');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.filter = getCSSFilter(currentFilter);  // Apply filter to the canvas
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    canvas.style.display = 'block';
+                    capturedImageData = canvas.toDataURL('image/png');  // Capture image data in base64
+                });
+
+                // Submit the captured image to the backend for S3 storage
+                submitBtn.addEventListener('click', () => {
+                    if (!capturedImageData) {
+                        alert('Please capture an image first.');
+                        return;
+                    }
+                    
+                    loadingText.style.display = 'block';  // Show loading text
+
+                    fetch('/save_image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ image: capturedImageData })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        loadingText.style.display = 'none';  // Hide loading text
+                        alert(data.message);
+                        loadStoredImages();  // Refresh stored images after uploading
+                    })
+                    .catch(error => {
+                        loadingText.style.display = 'none';  // Hide loading text
+                        console.error('Error submitting image: ', error);
+                    });
+                });
+
+                // Load stored images from S3
+                function loadStoredImages() {
+                    fetch('/get_images')
+                        .then(response => response.json())
+                        .then(data => {
+                            const storedImagesDiv = document.getElementById('stored-images');
+                            storedImagesDiv.innerHTML = '';  // Clear previous images
+
+                            // Display each stored image
+                            data.images.forEach(imageUrl => {
+                                const imgElement = document.createElement('img');
+                                imgElement.src = imageUrl;
+                                storedImagesDiv.appendChild(imgElement);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error loading stored images: ', error);
+                        });
+                }
+
+                // Helper function to get CSS filter string based on filter type
+                function getCSSFilter(filterType) {
+                    switch (filterType) {
+                        case 'grayscale':
+                            return 'grayscale(100%)';
+                        case 'sepia':
+                            return 'sepia(100%)';
+                        case 'invert':
+                            return 'invert(100%)';
+                        case 'blur':
+                            return 'blur(5px)';
+                        default:
+                            return 'none';
+                    }
+                }
+
+                // Load stored images on page load
+                window.onload = loadStoredImages;
+    
     </script>
 </body>
 </html>
