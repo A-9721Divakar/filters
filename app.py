@@ -57,10 +57,10 @@ def index():
     """Render the main index page."""
     return render_template('index.html')
 
-@app.route('/video_feed/<filter_type>')
-def video_feed(filter_type):
-    """Stream video feed with the specified filter."""
-    return Response(generate_frames(filter_type), mimetype='multipart/x-mixed-replace; boundary=frame')
+@app.route('/video_feed')
+def video_feed():
+    print("Video feed route called")  # Add this for debugging
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/capture', methods=['POST'])
 def capture():
