@@ -57,11 +57,6 @@ def index():
     """Render the main index page."""
     return render_template('index.html')
 
-@app.route('/video_feed')
-def video_feed():
-    print("Video feed route called")  # Add this for debugging
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 @app.route('/capture', methods=['POST'])
 def capture():
     """Capture an image and upload it to S3."""
