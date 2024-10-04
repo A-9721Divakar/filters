@@ -8,10 +8,10 @@ import tempfile
 
 app = Flask(__name__)
 
-# AWS S3 configuration
-AWS_ACCESS_KEY = 'AKIAWOOXTTUWTBZ6XQ6P'  # Replace with your Access Key
-AWS_SECRET_KEY = 'jaYe85mmTmKPGgp+q9A3vguyaXfz/SD5UvawkGg7'  # Replace with your Secret Key
-BUCKET_NAME = 'deva23'  # Replace with your S3 bucket name
+# AWS S3 configuration (use environment variables for security)
+AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
+AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY')
+BUCKET_NAME = os.getenv('BUCKET_NAME')
 
 # Initialize S3 client
 s3_client = boto3.client(
@@ -33,12 +33,11 @@ def apply_filter(frame, filter_type):
         sepia_filter = np.array([[0.272, 0.534, 0.131],
                                   [0.349, 0.686, 0.168],
                                   [0.393, 0.769, 0.189]])
-        # Ensure that the frame is a valid 3-channel BGR image before applying sepia
         if frame.ndim == 3 and frame.shape[2] == 3:
             return cv2.transform(frame, sepia_filter)
     elif filter_type == 'blur':
         return cv2.GaussianBlur(frame, (15, 15), 0)
-    return frame  # Return the original frame if no valid filter is selected
+    return frame
 
 def generate_frames(filter_type):
     """Generate video frames with applied filter."""
@@ -51,16 +50,16 @@ def generate_frames(filter_type):
         frame = buffer.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-@app.route('/video_feed')
-def video_feed():
-        print("Video feed route called")  # Add this for debugging
-        return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 @app.route('/')
 def index():
     """Render the main index page."""
     return render_template('index.html')
+
+@app.route('/video_feed/<filter_type>')
+def video_feed(filter_type):
+    """Stream video feed with the specified filter."""
+    return Response(generate_frames(filter_type), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/capture', methods=['POST'])
 def capture():
@@ -90,12 +89,5 @@ def open_camera():
     """Open the camera (for internal use)."""
     return {'message': 'Camera is opened'}, 200
 
-def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-    url_for('static', filename='style.css')
-
-
-
+    app.run(host='0.0.0.0', port=8080)
