@@ -90,7 +90,6 @@ def capture():
         app.logger.error(f"An error occurred during capture: {e}")
         return {'error': 'An error occurred'}, 500
 
-
 @app.route('/open_camera', methods=['GET'])
 def open_camera():
     """Open the camera (for internal use)."""
