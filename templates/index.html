@@ -59,33 +59,43 @@
         <h2>Capture Image</h2>
         <button id="capture_button" onclick="captureImage()">Capture Image</button>
     </div>
-    <script>
-        let currentFilter = 'none';
+   <script>
+    let currentFilter = 'none';
 
-        function setFilter(filterType) {
-            currentFilter = filterType;
-            document.getElementById('video').src = `{{ url_for('video_feed', filter_type='${filterType}') }}`;
-        }
+    function setFilter(filterType) {
+        currentFilter = filterType;
+        document.getElementById('video').src = `{{ url_for('video_feed', filter_type='${filterType}') }}`;
+    }
 
-        function captureImage() {
-            document.getElementById('capture_button').innerText = 'Capturing...';
-            fetch('/capture', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({ filter_type: currentFilter }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('capture_button').innerText = 'Capture Image';
-                if (data.filename) {
-                    alert(`Image captured and uploaded to S3 as ${data.filename}`);
-                } else {
-                    alert(data.error);
-                }
-            });
-        }
-    </script>
+    function captureImage() {
+        // Disable button to prevent multiple POST requests
+        document.getElementById('capture_button').disabled = true;
+        document.getElementById('capture_button').innerText = 'Capturing...';
+
+        fetch('/capture', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({ filter_type: currentFilter }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('capture_button').disabled = false;
+            document.getElementById('capture_button').innerText = 'Capture Image';
+
+            if (data.filename) {
+                alert(`Image captured and uploaded to S3 as ${data.filename}`);
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            document.getElementById('capture_button').disabled = false;
+            document.getElementById('capture_button').innerText = 'Capture Image';
+            alert('An error occurred during image capture.');
+        });
+    }
+</script> 
 </body>
 </html>
