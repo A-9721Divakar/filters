@@ -9,9 +9,9 @@ import tempfile
 app = Flask(__name__)
 
 # AWS S3 configuration (use environment variables for security)
-AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
-AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY')
-BUCKET_NAME = os.getenv('BUCKET_NAME')
+AWS_ACCESS_KEY = os.getenv('AKIAWOOXTTUW2PR7IXV5')
+AWS_SECRET_KEY = os.getenv('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')
+BUCKET_NAME = os.getenv('deva23')
 
 # Initialize S3 client
 s3_client = boto3.client(
