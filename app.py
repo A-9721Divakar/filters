@@ -64,25 +64,32 @@ def video_feed(filter_type):
 @app.route('/capture', methods=['POST'])
 def capture():
     """Capture an image and upload it to S3."""
-    filter_type = request.form['filter_type']
-    success, frame = video_capture.read()
-    if success:
-        frame = apply_filter(frame, filter_type)
-        filename = f"{uuid.uuid4()}.jpg"
-        
-        # Use tempfile to create a temporary file path
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
-            temp_file_path = temp_file.name
-            cv2.imwrite(temp_file_path, frame)
+    try:
+        filter_type = request.form['filter_type']
+        success, frame = video_capture.read()
+        if success:
+            frame = apply_filter(frame, filter_type)
+            filename = f"{uuid.uuid4()}.jpg"
 
-        try:
-            # Upload the image to S3 after closing the tempfile
-            s3_client.upload_file(temp_file_path, BUCKET_NAME, filename)
-            os.remove(temp_file_path)  # Clean up temporary file
-            return {'message': 'Image captured and uploaded to S3', 'filename': filename}, 200
-        except Exception as e:
-            return {'error': f'Failed to upload to S3: {str(e)}'}, 500
-    return {'error': 'Failed to capture image'}, 500
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
+                temp_file_path = temp_file.name
+                cv2.imwrite(temp_file_path, frame)
+
+            try:
+                # Upload the image to S3
+                s3_client.upload_file(temp_file_path, BUCKET_NAME, filename)
+                os.remove(temp_file_path)  # Clean up temporary file
+                return {'filename': filename}, 200
+            except Exception as e:
+                app.logger.error(f"S3 upload failed: {e}")
+                return {'error': 'Failed to upload to S3'}, 500
+        else:
+            app.logger.error("Failed to capture image from camera")
+            return {'error': 'Failed to capture image'}, 500
+    except Exception as e:
+        app.logger.error(f"An error occurred during capture: {e}")
+        return {'error': 'An error occurred'}, 500
+
 
 @app.route('/open_camera', methods=['GET'])
 def open_camera():
@@ -90,4 +97,7 @@ def open_camera():
     return {'message': 'Camera is opened'}, 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    import eventlet
+    eventlet.monkey_patch()
+    app.run(debug=True, host='0.0.0.0', port=8080)
+
